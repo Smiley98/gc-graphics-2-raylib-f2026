@@ -60,6 +60,8 @@ int main()
     InitAudioDevice();
     SetTargetFPS(60);
 
+    Sound coin = LoadSound("./assets/audio/sound_coin.mp3");
+
     while (!WindowShouldClose())
     {
         float dt = GetFrameTime();
@@ -96,6 +98,7 @@ int main()
         if (CheckCollisionRecs(ball_rec, paddle1_rec) || CheckCollisionRecs(ball_rec, paddle2_rec))
         {
             ball_direction.x *= -1.0f;
+            PlaySound(coin);
         }
 
         // Update ball position after collision resolution, then render
@@ -115,6 +118,7 @@ int main()
         EndDrawing();
     }
 
+    UnloadSound(coin);
     CloseAudioDevice();
     CloseWindow();
     return 0;
