@@ -2,47 +2,42 @@
 #include "raymath.h"
 #include "raygui.h"
 
+enum GameState : int
+{
+    PLAYING,
+    WIN,
+    LOSS
+};
+
 int main()
 {
     InitWindow(800, 800, "Graphics-2");
     InitAudioDevice();
     SetTargetFPS(60);
 
-    Vector2 pos1 = { 0.0f, GetScreenHeight() * 0.5f };
-    Vector2 pos2 = { GetScreenWidth() * 0.5f, GetScreenHeight() * 0.5f };
-
+    int state = PLAYING;
     while (!WindowShouldClose())
     {
-        float total_time = GetTime();
-        float frame_time = GetFrameTime();
+        if (IsKeyPressed(KEY_TAB)) ++state %= 3;
 
-        pos1.x += 250.0f * frame_time;
-        if (pos1.x + 20.0f >= GetScreenWidth())
-            pos1.x = 0.0f;
-
-        pos1.y = sinf(total_time * 8.0f) * 100.0f + GetScreenHeight() * 0.5f;
-
-        // Rotate at 100 degrees per second in a radius of 100, then translate by half the screen
-        Matrix translation_1 = MatrixTranslate(100.0f, 0.0f, 0.0f);
-        Matrix rotation = MatrixRotateZ(total_time * 100.0f * DEG2RAD);
-        Matrix translation_2 = MatrixTranslate(GetScreenWidth() * 0.5f, GetScreenHeight() * 0.5f, 0.0f);
-
-        Vector2 pos_2_rotated = Vector2UnitX * translation_1 * rotation * translation_2;
-        
         // *ONLY CALL BeginDrawing(); AND EndDrawing(); **ONCE** PER FRAME!!!*
         BeginDrawing();
 
             ClearBackground(WHITE);
-            DrawFPS(10, 10);
-            DrawText("Hello raylib", 660, 10, 20, DARKBLUE);
+            switch (state)
+            {
+            case PLAYING:
+                DrawText("Game on!", 350, 400, 20, BLUE);
+                break;
 
-            DrawCircleV(pos1, 20.0f, BLUE);
-            DrawCircleV(GetMousePosition(), 20.0f, RED);
+            case WIN:
+                DrawText("You win :)", 350, 400, 20, GREEN);
+                break;
 
-            DrawCircleV(pos_2_rotated, 20.0f, PURPLE);
-
-            DrawLineV(pos1, pos_2_rotated, LIME);
-            DrawLineEx({ GetScreenWidth() * 0.5f, GetScreenHeight() * 0.5f }, GetMousePosition(), 4.0f, ORANGE);
+            case LOSS:
+                DrawText("You loose :(", 350, 400, 20, RED);
+                break;
+            }
 
         EndDrawing();
     }
