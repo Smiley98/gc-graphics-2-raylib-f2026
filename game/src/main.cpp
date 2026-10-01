@@ -28,17 +28,21 @@ int main()
         Matrix translation_2 = MatrixTranslate(GetScreenWidth() * 0.5f, GetScreenHeight() * 0.5f, 0.0f);
 
         Vector2 pos_2_rotated = Vector2UnitX * translation_1 * rotation * translation_2;
-        DrawCircleV(pos_2_rotated, 20.0f, PURPLE);
-
-        DrawLineV(pos1, pos_2_rotated, LIME);
-        DrawLineEx({ GetScreenWidth() * 0.5f, GetScreenHeight() * 0.5f }, GetMousePosition(), 4.0f, ORANGE);
-
+        
+        // *ONLY CALL BeginDrawing(); AND EndDrawing(); **ONCE** PER FRAME!!!*
         BeginDrawing();
-        ClearBackground(WHITE);
-        DrawFPS(10, 10);
-        DrawText("Hello raylib", 660, 10, 20, DARKBLUE);
-        DrawCircleV(pos1, 20.0f, BLUE);
-        DrawCircleV(GetMousePosition(), 20.0f, RED);
+
+            ClearBackground(WHITE);
+            DrawFPS(10, 10);
+            DrawText("Hello raylib", 660, 10, 20, DARKBLUE);
+
+            DrawCircleV(pos1, 20.0f, BLUE);
+            DrawCircleV(GetMousePosition(), 20.0f, RED);
+
+            DrawCircleV(pos_2_rotated, 20.0f, PURPLE);
+
+            DrawLineV(pos1, pos_2_rotated, LIME);
+            DrawLineEx({ GetScreenWidth() * 0.5f, GetScreenHeight() * 0.5f }, GetMousePosition(), 4.0f, ORANGE);
 
         EndDrawing();
     }
