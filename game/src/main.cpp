@@ -2,67 +2,182 @@
 #include "raymath.h"
 #include "raygui.h"
 
-enum GameState : int
+#include <cassert>
+#include <array>
+#include <vector>
+#include <algorithm>
+
+constexpr float SCREEN_SIZE = 800;
+
+constexpr int TILE_COUNT = 20;
+constexpr float TILE_SIZE = SCREEN_SIZE / TILE_COUNT;
+
+enum TileType : int
 {
-    PLAYING,
-    WIN,
-    LOSS
+    GRASS,      // Marks unoccupied space, can be overwritten 
+    DIRT,       // Marks the path, cannot be overwritten
+    WAYPOINT,   // Marks where the path turns, cannot be overwritten
+    COUNT
 };
+
+struct Cell
+{
+    int row;
+    int col;
+};
+
+constexpr std::array<Cell, 4> DIRECTIONS{ Cell{ -1, 0 }, Cell{ 1, 0 }, Cell{ 0, -1 }, Cell{ 0, 1 } };
+
+inline bool InBounds(Cell cell, int rows = TILE_COUNT, int cols = TILE_COUNT)
+{
+    return cell.col >= 0 && cell.col < cols && cell.row >= 0 && cell.row < rows;
+}
+
+void DrawTile(int row, int col, Color color)
+{
+    DrawRectangle(col * TILE_SIZE, row * TILE_SIZE, TILE_SIZE, TILE_SIZE, color);
+}
+
+void DrawTile(int row, int col, int type)
+{
+    Color colors[3] =
+    {
+        LIME,
+        BEIGE,
+        SKYBLUE
+    };
+    //assert(type >= 0 && type < COUNT);
+    DrawTile(row, col, colors[type]);
+}
+
+Vector2 TileCenter(int row, int col)
+{
+    float x = col * TILE_SIZE + TILE_SIZE * 0.5f;
+    float y = row * TILE_SIZE + TILE_SIZE * 0.5f;
+    return { x, y };
+}
+
+// Returns a collection of adjacent cells that match the search value.
+std::vector<Cell> FloodFill(Cell start, int tiles[TILE_COUNT][TILE_COUNT], TileType searchValue)
+{
+    // "open" = "places we want to search", "closed" = "places we've already searched".
+    std::vector<Cell> result;
+    std::vector<Cell> open;
+    bool closed[TILE_COUNT][TILE_COUNT];
+    for (int row = 0; row < TILE_COUNT; row++)
+    {
+        for (int col = 0; col < TILE_COUNT; col++)
+        {
+            // We don't want to search zero-tiles, so add them to closed!
+            closed[row][col] = tiles[row][col] == 0;
+        }
+    }
+
+    // Add the starting cell to the exploration queue & search till there's nothing left!
+    open.push_back(start);
+    while (!open.empty())
+    {
+        // Remove from queue and prevent revisiting
+        Cell cell = open.back();
+        open.pop_back();
+        closed[cell.row][cell.col] = true;
+
+        // Add to result if explored cell has the desired value
+        if (tiles[cell.row][cell.col] == searchValue)
+            result.push_back(cell);
+
+        // Search neighbours
+        for (Cell dir : DIRECTIONS)
+        {
+            Cell adj = { cell.row + dir.row, cell.col + dir.col };
+            if (InBounds(adj) && !closed[adj.row][adj.col] && tiles[adj.row][adj.col] != 0)
+                open.push_back(adj);
+        }
+    }
+
+    return result;
+}
 
 int main()
 {
-    InitWindow(800, 800, "Graphics-2");
-    InitAudioDevice();
+    int tiles[TILE_COUNT][TILE_COUNT]
+    {
+        //col:0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19    row:
+            { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0 }, // 0
+            { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0 }, // 1
+            { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0 }, // 2
+            { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0 }, // 3
+            { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0 }, // 4
+            { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0 }, // 5
+            { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0 }, // 6
+            { 0, 0, 0, 2, 1, 1, 1, 1, 1, 1, 1, 1, 2, 0, 0, 0, 0, 0, 0, 0 }, // 7
+            { 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }, // 8
+            { 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }, // 9
+            { 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }, // 10
+            { 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }, // 11
+            { 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }, // 12
+            { 0, 0, 0, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 0, 0, 0 }, // 13
+            { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0 }, // 14
+            { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0 }, // 15
+            { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0 }, // 16
+            { 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 1, 1, 1, 1, 1, 1, 2, 0, 0, 0 }, // 17
+            { 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }, // 18
+            { 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }  // 19
+    };
+    std::vector<Cell> waypoints = FloodFill({ 0, 12 }, tiles, WAYPOINT);
+    //int curr = 0;
+    //int next = curr + 1;
+    //
+    //Vector2 enemyPosition = TileCenter(waypoints[curr].row, waypoints[curr].col);
+    //float enemySpeed = 250.0f;   // <-- 250 pixels per second
+    //float minDistance = enemySpeed / 60.0f;
+    //minDistance *= 1.1f;
+    //bool atEnd = false;
+
+    InitWindow(SCREEN_SIZE, SCREEN_SIZE, "Tower Defense");
     SetTargetFPS(60);
-
-    Vector2 ball = { 400.0f, 400.0f };
-
-    int state = PLAYING;
     while (!WindowShouldClose())
     {
-        if (IsKeyPressed(KEY_TAB)) ++state %= 3;
-        float tt = GetTime();
+        float dt = GetFrameTime();
 
-        switch (state)
-        {
-        case PLAYING:
-            ball.y = 400.0f + sinf(tt) * 100.0f;
-            break;
+        //if (!atEnd)
+        //{
+        //    Vector2 from = TileCenter(waypoints[curr].row, waypoints[curr].col);
+        //    Vector2 to = TileCenter(waypoints[next].row, waypoints[next].col);
+        //    Vector2 direction = Vector2Normalize(to - from);
+        //    enemyPosition += direction * enemySpeed * dt;
+        //
+        //    // Tolorance depends on enemy speed
+        //    if (CheckCollisionPointCircle(enemyPosition, to, minDistance))
+        //    {
+        //        enemyPosition = to;
+        //
+        //        curr++;
+        //        next++;
+        //        atEnd = curr == waypoints.size() - 1;
+        //    }
+        //}
 
-        case WIN:
-            ball.x = 400.0f + sinf(tt) * 400.0f;
-            break;
-
-        case LOSS:
-            ball.x = 400.0f + sinf(tt) * 100.0f;
-            ball.y = 400.0f + cosf(tt) * 100.0f;
-            break;
-        }
-
-        // *ONLY CALL BeginDrawing(); AND EndDrawing(); **ONCE** PER FRAME!!!*
         BeginDrawing();
+        ClearBackground(BLACK);
 
-            ClearBackground(WHITE);
-            switch (state)
-            {
-            case PLAYING:
-                DrawText("Game on!", 350, 400, 20, BLUE);
-                break;
+        for (Cell cell : waypoints)
+            DrawTile(cell.row, cell.col, tiles[cell.row][cell.col]);
 
-            case WIN:
-                DrawText("You win :)", 350, 400, 20, GREEN);
-                break;
+        // Draw entire grid
+        //for (int row = 0; row < TILE_COUNT; row++)
+        //{
+        //    for (int col = 0; col < TILE_COUNT; col++)
+        //    {
+        //        DrawTile(row, col, tiles[row][col]);
+        //    }
+        //}
 
-            case LOSS:
-                DrawText("You loose :(", 350, 400, 20, RED);
-                break;
-            }
+        //DrawCircleV(enemyPosition, 20.0f, GOLD);
 
-            DrawCircleV(ball, 25.0f, PURPLE);
         EndDrawing();
     }
-
-    CloseAudioDevice();
     CloseWindow();
     return 0;
 }
+
