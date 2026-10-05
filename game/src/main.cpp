@@ -63,7 +63,7 @@ std::vector<Cell> FloodFill(Cell start, int tiles[TILE_COUNT][TILE_COUNT], TileT
     // "open" = "places we want to search", "closed" = "places we've already searched".
     std::vector<Cell> result;
     std::vector<Cell> open;
-    bool closed[TILE_COUNT][TILE_COUNT];
+    bool closed[TILE_COUNT][TILE_COUNT]{};
     for (int row = 0; row < TILE_COUNT; row++)
     {
         for (int col = 0; col < TILE_COUNT; col++)
@@ -125,14 +125,14 @@ int main()
             { 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }  // 19
     };
     std::vector<Cell> waypoints = FloodFill({ 0, 12 }, tiles, WAYPOINT);
-    //int curr = 0;
-    //int next = curr + 1;
-    //
-    //Vector2 enemyPosition = TileCenter(waypoints[curr].row, waypoints[curr].col);
-    //float enemySpeed = 250.0f;   // <-- 250 pixels per second
-    //float minDistance = enemySpeed / 60.0f;
-    //minDistance *= 1.1f;
-    //bool atEnd = false;
+    int curr = 0;
+    int next = curr + 1;
+    
+    Vector2 enemy_position = TileCenter(waypoints[curr].row, waypoints[curr].col);
+    float enemy_speed = 250.0f;   // <-- 250 pixels per second
+    float min_distance = enemy_speed / 60.0f;
+    min_distance *= 1.1f;
+    bool at_end = false;
 
     InitWindow(SCREEN_SIZE, SCREEN_SIZE, "Tower Defense");
     SetTargetFPS(60);
@@ -140,40 +140,37 @@ int main()
     {
         float dt = GetFrameTime();
 
-        //if (!atEnd)
-        //{
-        //    Vector2 from = TileCenter(waypoints[curr].row, waypoints[curr].col);
-        //    Vector2 to = TileCenter(waypoints[next].row, waypoints[next].col);
-        //    Vector2 direction = Vector2Normalize(to - from);
-        //    enemyPosition += direction * enemySpeed * dt;
-        //
-        //    // Tolorance depends on enemy speed
-        //    if (CheckCollisionPointCircle(enemyPosition, to, minDistance))
-        //    {
-        //        enemyPosition = to;
-        //
-        //        curr++;
-        //        next++;
-        //        atEnd = curr == waypoints.size() - 1;
-        //    }
-        //}
+        if (!at_end)
+        {
+            Vector2 from = TileCenter(waypoints[curr].row, waypoints[curr].col);
+            Vector2 to = TileCenter(waypoints[next].row, waypoints[next].col);
+            Vector2 direction = Vector2Normalize(to - from);
+            enemy_position += direction * enemy_speed * dt;
+        
+            // Tolorance depends on enemy speed
+            if (CheckCollisionPointCircle(enemy_position, to, min_distance))
+            {
+                enemy_position = to;
+        
+                curr++;
+                next++;
+                at_end = curr == waypoints.size() - 1;
+            }
+        }
 
         BeginDrawing();
         ClearBackground(BLACK);
 
-        for (Cell cell : waypoints)
-            DrawTile(cell.row, cell.col, tiles[cell.row][cell.col]);
-
         // Draw entire grid
-        //for (int row = 0; row < TILE_COUNT; row++)
-        //{
-        //    for (int col = 0; col < TILE_COUNT; col++)
-        //    {
-        //        DrawTile(row, col, tiles[row][col]);
-        //    }
-        //}
+        for (int row = 0; row < TILE_COUNT; row++)
+        {
+            for (int col = 0; col < TILE_COUNT; col++)
+            {
+                DrawTile(row, col, tiles[row][col]);
+            }
+        }
 
-        //DrawCircleV(enemyPosition, 20.0f, GOLD);
+        DrawCircleV(enemy_position, 20.0f, GOLD);
 
         EndDrawing();
     }
