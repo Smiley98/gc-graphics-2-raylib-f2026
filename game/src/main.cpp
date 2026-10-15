@@ -98,6 +98,15 @@ std::vector<Cell> FloodFill(Cell start, int tiles[TILE_COUNT][TILE_COUNT], TileT
     return result;
 }
 
+struct Bullet
+{
+    Vector2 position;
+    Vector2 direction;
+    float speed;
+    float time;
+    bool enabled;
+};
+
 int main()
 {
     int tiles[TILE_COUNT][TILE_COUNT]
@@ -134,6 +143,10 @@ int main()
     min_distance *= 1.1f;
     bool at_end = false;
 
+    float bullet_time_current = 0.0f;
+    float bullet_time_total = 0.25f;
+    std::vector<Bullet> bullets;
+
     InitWindow(SCREEN_SIZE, SCREEN_SIZE, "Tower Defense");
     SetTargetFPS(60);
     while (!WindowShouldClose())
@@ -156,6 +169,18 @@ int main()
                 next++;
                 at_end = curr == waypoints.size() - 1;
             }
+        }
+
+        bullet_time_current += dt;
+        if (bullet_time_current >= bullet_time_total && IsKeyDown(KEY_SPACE))
+        {
+            bullet_time_current = 0.0f;
+
+            Bullet bullet{};
+            bullet.position = GetMousePosition();
+            bullet.direction = Vector2Normalize(enemy_position - bullet.position);
+            bullet.speed = 300.0f;
+            bullet.enabled = true;
         }
 
         BeginDrawing();
