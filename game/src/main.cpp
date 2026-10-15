@@ -42,7 +42,7 @@ void DrawTile(int row, int col, int type)
 {
     Color colors[3] =
     {
-        LIME,
+        PINK,
         BEIGE,
         SKYBLUE
     };
@@ -104,7 +104,9 @@ struct Bullet
     Vector2 direction;
     float speed;
     float time;
-    bool enabled;
+    float radius;
+    Color color;
+    bool destroy;
 };
 
 int main()
@@ -179,8 +181,15 @@ int main()
             Bullet bullet{};
             bullet.position = GetMousePosition();
             bullet.direction = Vector2Normalize(enemy_position - bullet.position);
-            bullet.speed = 300.0f;
-            bullet.enabled = true;
+
+            bullet.speed = GetRandomValue(250, 500);
+            bullet.radius = GetRandomValue(10, 50);
+
+            bullet.color.r = GetRandomValue(0, 255);
+            bullet.color.g = GetRandomValue(0, 255);
+            bullet.color.b = GetRandomValue(0, 255);
+            bullet.color.a = 255;
+
             bullets.push_back(bullet);
         }
 
@@ -189,7 +198,17 @@ int main()
             Vector2 bullet_velocity = bullet.direction * bullet.speed;
             bullet.position += bullet_velocity * dt;
             bullet.time += dt;
+
+            // "Flag the current bullet to be destroyed if its been alive for 1 or more seconds"
+            bullet.destroy |= bullet.time >= 2.5f;
+
         }
+
+        // "Remove the bullet from the bullets vector if it's destroy flag has been set to true"
+        std::erase_if(bullets, [](Bullet& bullet)
+        {
+            return bullet.destroy;
+        });
 
         BeginDrawing();
         ClearBackground(BLACK);
@@ -205,10 +224,13 @@ int main()
 
         for (const Bullet& bullet : bullets)
         {
-            DrawCircleV(bullet.position, 20.0f, RED);
+            DrawCircleV(bullet.position, bullet.radius, bullet.color);
         }
 
         DrawCircleV(enemy_position, 20.0f, GOLD);
+
+        DrawText(TextFormat("Bullet Count: %i", bullets.size()), 10, 10, 20, RED);
+        DrawFPS(720, 10);
 
         EndDrawing();
     }
