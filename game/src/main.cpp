@@ -42,7 +42,7 @@ void DrawTile(int row, int col, int type)
 {
     Color colors[3] =
     {
-        PINK,
+        GREEN,
         BEIGE,
         SKYBLUE
     };
@@ -109,6 +109,21 @@ struct Bullet
     bool destroy;
 };
 
+// Fill in for Lab 2
+struct Enemy
+{
+    Cell cell;
+    float health;
+    bool destroy;
+};
+
+// Fill in for Lab 2
+struct Turret
+{
+    Cell cell;
+    Enemy* target;
+};
+
 int main()
 {
     int tiles[TILE_COUNT][TILE_COUNT]
@@ -149,12 +164,60 @@ int main()
     float bullet_time_total = 0.25f;
     std::vector<Bullet> bullets;
 
+    std::vector<Turret> turrets; // Use in Assignment 1
+    std::vector<Enemy> enemies;  // Use in Lab 2 and Assignment 1
+
+    // Manual turret creation example
+    turrets.resize(3);
+    turrets[0].cell = { 3,  7  };
+    turrets[1].cell = { 10, 7  };
+    turrets[2].cell = { 15, 14 };
+
+    // Search array for desired tiles (ie turrets)
+    for (int row = 0; row < TILE_SIZE; row++)
+    {
+        for (int col = 0; col < TILE_SIZE; col++)
+        {
+            if (tiles[row][col] == 3)
+            {
+                // Construct turret here
+                Turret turret{};
+                turret.cell = { row, col };
+                turrets.push_back(turret);
+            }
+        }
+    }
+
     InitWindow(SCREEN_SIZE, SCREEN_SIZE, "Tower Defense");
     SetTargetFPS(60);
     while (!WindowShouldClose())
     {
         float dt = GetFrameTime();
 
+        // Enemy movement (need to loop through enemies vector to get marks on Lab 2 and Assignment 1)
+        for (Enemy& enemy : enemies)
+        {
+            // Apply enemy movement and gameplay logic (such as flagging for removal when health is <= 0.0f) here
+        }
+
+        // Acquire nearest enemy as target and shoot it if the turret is off-cooldown
+        for (Turret& turret : turrets)
+        {
+            Vector2 turret_position = TileCenter(turret.cell.row, turret.cell.col);
+            float max = FLT_MAX;
+            for (Enemy& enemy : enemies)
+            {
+                Vector2 enemy_position = TileCenter(enemy.cell.row, enemy.cell.col);
+                float distance = Vector2Distance(turret_position, enemy_position);
+                if (distance < max)
+                {
+                    max = distance;
+                    // Target nearest enemy
+                }
+            }
+        }
+
+        // Lift this movement logic to the above loop to make a generalized enemy system
         if (!at_end)
         {
             Vector2 from = TileCenter(waypoints[curr].row, waypoints[curr].col);
@@ -173,6 +236,7 @@ int main()
             }
         }
 
+        // Bullet creation
         bullet_time_current += dt;
         if (bullet_time_current >= bullet_time_total && IsKeyDown(KEY_SPACE))
         {
@@ -193,6 +257,7 @@ int main()
             bullets.push_back(bullet);
         }
 
+        // Bullet update
         for (Bullet& bullet : bullets)
         {
             Vector2 bullet_velocity = bullet.direction * bullet.speed;
@@ -200,14 +265,35 @@ int main()
             bullet.time += dt;
 
             // "Flag the current bullet to be destroyed if its been alive for 1 or more seconds"
-            bullet.destroy |= bullet.time >= 2.5f;
+            bullet.destroy |= bullet.time >= 1.0f;
 
+            Rectangle screen_rec;
+            screen_rec.x = 0.0f;
+            screen_rec.y = 0.0f;
+            screen_rec.width = GetScreenWidth();
+            screen_rec.height = GetScreenHeight();
+
+            bullet.destroy |= !CheckCollisionCircleRec(bullet.position, bullet.radius, screen_rec);
         }
 
-        // "Remove the bullet from the bullets vector if it's destroy flag has been set to true"
+        for (Bullet& bullet : bullets)
+        {
+            for (Enemy& enemy : enemies)
+            {
+                // Check if the current bullet is colliding with the current enemy
+                // If so, damage the enemy
+                // Do any on-bullet-enemy behaviour here such as playing sounds
+            }
+        }
+
         std::erase_if(bullets, [](Bullet& bullet)
         {
             return bullet.destroy;
+        });
+
+        std::erase_if(enemies, [](Enemy& enemy)
+        {
+            return enemy.destroy;
         });
 
         BeginDrawing();
@@ -227,14 +313,15 @@ int main()
             DrawCircleV(bullet.position, bullet.radius, bullet.color);
         }
 
-        DrawCircleV(enemy_position, 20.0f, GOLD);
+        for (const Turret& turret : turrets)
+        {
+            DrawRectangleV(TileCenter(turret.cell.row, turret.cell.col), { TILE_SIZE, TILE_SIZE }, ORANGE);
+        }
 
-        DrawText(TextFormat("Bullet Count: %i", bullets.size()), 10, 10, 20, RED);
-        DrawFPS(720, 10);
+        DrawCircleV(enemy_position, 20.0f, GOLD);
 
         EndDrawing();
     }
     CloseWindow();
     return 0;
 }
-
