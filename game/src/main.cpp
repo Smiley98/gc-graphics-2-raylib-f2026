@@ -181,6 +181,14 @@ int main()
             bullet.direction = Vector2Normalize(enemy_position - bullet.position);
             bullet.speed = 300.0f;
             bullet.enabled = true;
+            bullets.push_back(bullet);
+        }
+
+        for (Bullet& bullet : bullets)
+        {
+            Vector2 bullet_velocity = bullet.direction * bullet.speed;
+            bullet.position += bullet_velocity * dt;
+            bullet.time += dt;
         }
 
         BeginDrawing();
@@ -193,6 +201,11 @@ int main()
             {
                 DrawTile(row, col, tiles[row][col]);
             }
+        }
+
+        for (const Bullet& bullet : bullets)
+        {
+            DrawCircleV(bullet.position, 20.0f, RED);
         }
 
         DrawCircleV(enemy_position, 20.0f, GOLD);
